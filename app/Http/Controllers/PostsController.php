@@ -21,11 +21,26 @@ use Illuminate\Http\Request;
          */
         public function store(Request $request)
         {
-            $post = Post::create([
-                'title' => $request->title,
-                'slug' => $request->slug,
-                'body' => $request->body
-            ]);
+            try {
+                $validateData = $request->validate([
+                    'title' => 'required|string|max:255',
+                    'body'  => 'required|string',
+                    'slug'  => 'unique'
+                ]
+                ,
+                [
+                    'title.required' => 'post title is required',
+                    'body.required' => 'post cant be empty',
+                    'title.max' => 'post title can\'t be more than 255 characters'     
+                ]);
+                $post = Post::create($request->all());
+                return redirect('/')->with('status', 'Post created successfully!');
+            }
+            
+            catch (Exception $e) {
+                Log::error('General error creating post: ' . $e->getMessage());
+                return redirect('/')->with('error', 'An unexpected error occurred.');
+            }
         }
         
         /**
@@ -33,8 +48,8 @@ use Illuminate\Http\Request;
          */
         public function show(string $id)
         {
-            $post_S = Post::findOrFail($id);
-            // return view(/*route*/ , ['posts' => $posts]);
+            $post = Post::findOrFail($id);
+            return view('/' , ['posts' => $posts]);
         }
 
         
@@ -43,11 +58,12 @@ use Illuminate\Http\Request;
          */
         public function update(Request $request, string $id)
         {
-            $post_U = Post::findOrFail($id);
-            $post_U->title = $request->title;
-            $post_U->body = $request->body;
+            $post = Post::findOrFail($id);
+            $post->title = $request->title;
+            $post->body = $request->body;
 
-            $post_U->save();
+            $post->save();
+            return redirect('/')->with('status', 'Post updated successfully!');
         }
 
         /**
@@ -55,7 +71,8 @@ use Illuminate\Http\Request;
          */
         public function destroy(string $id)
         {
-            $post_D = Post::findOrFail($id);
-            $post_D->delete();
+            $post = Post::findOrFail($id);
+            $post->delete();
+            return redirect('/')->with('status', 'Post deleted successfully!');
         }
     }
